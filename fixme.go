@@ -24,7 +24,7 @@ func worker(repo string, sem chan int, wg *sync.WaitGroup, errChan chan error) {
 	defer wg.Done()
 	sem <- 1
 	if err := fetch(repo); err != nil {
-		errChan <- err
+		errChan <- err // potential deadlock
 	}
 	<-sem
 }
