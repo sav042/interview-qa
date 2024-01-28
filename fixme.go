@@ -13,21 +13,20 @@ func restore(repos []string) error {
 	var wg sync.WaitGroup
 	wg.Add(len(repos))
 	for _, repo := range repos {
-		sem <- 1 // why writing is here ?
-		go func() {
-			defer func() {
-				wg.Done()
-				<-sem
-			}()
-			if err := fetch(repo); err != nil { // what's wrong?
-				errChan <- err
-			}
-		}()
+		go worker(repo, sem, &wg, errChan)
 	}
 	wg.Wait()
-	close(sem) // can closing occurs before reading <-sem ?
 	close(errChan)
 	return <-errChan
+}
+
+func worker(repo string, sem chan int, wg *sync.WaitGroup, errChan chan error) {
+	defer wg.Done()
+	sem <- 1
+	if err := fetch(repo); err != nil {
+		errChan <- err
+	}
+	<-sem
 }
 
 // fake db fetch func
